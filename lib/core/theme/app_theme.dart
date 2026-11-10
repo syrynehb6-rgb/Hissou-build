@@ -59,7 +59,7 @@ class HissouTheme {
         ),
         iconTheme: IconThemeData(color: HissouColors.primaryNavy),
       ),
-      cardTheme: CardTheme(
+      cardTheme: CardThemeData(
         color: HissouColors.cardSurfaceLight,
         elevation: 0,
         shape: RoundedRectangleBorder(
@@ -142,7 +142,7 @@ class HissouTheme {
           fontWeight: FontWeight.w800,
         ),
       ),
-      cardTheme: CardTheme(
+      cardTheme: CardThemeData(
         color: HissouColors.cardSurfaceDark,
         elevation: 0,
         shape: RoundedRectangleBorder(
