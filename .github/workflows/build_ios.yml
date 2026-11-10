@@ -32,6 +32,7 @@ jobs:
             -configuration Release \
             -sdk iphoneos \
             -destination 'generic/platform=iOS' \
+            -derivedDataPath ./build_output \
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGNING_ALLOWED=NO \
@@ -40,7 +41,7 @@ jobs:
       - name: Package IPA
         run: |
           mkdir -p Payload
-          cp -r build/ios/iphoneos/Runner.app Payload/
+          cp -r ios/build_output/Build/Products/Release-iphoneos/Runner.app Payload/
           zip -r Hissou.ipa Payload
 
       - name: Upload IPA
