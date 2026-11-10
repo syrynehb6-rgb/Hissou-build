@@ -7,7 +7,7 @@ on:
 
 jobs:
   build:
-    runs-on: macos-latest
+    runs-on: macos-14
     steps:
       - uses: actions/checkout@v4
 
@@ -20,8 +20,22 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
-      - name: Build iOS (No codesign)
-        run: flutter build ios --release --no-codesign
+      - name: Build iOS xcworkspace
+        run: flutter build ios --config-only --no-codesign
+
+      - name: Build with Xcode (No Signing)
+        run: |
+          cd ios
+          pod install
+          xcodebuild -workspace Runner.xcworkspace \
+            -scheme Runner \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            clean build
 
       - name: Package IPA
         run: |
