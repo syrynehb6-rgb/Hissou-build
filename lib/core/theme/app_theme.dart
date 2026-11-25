@@ -2,32 +2,89 @@ import 'package:flutter/material.dart';
 
 class HissouColors {
   // Brand identity extracted directly from Hissou's official logo
-  static const Color primaryNavy = Color(0xFF112240);
-  static const Color primaryNavyLight = Color(0xFF1E3A6B);
-  static const Color primaryNavyDark = Color(0xFF0A1324);
+  static const Color primaryNavy = Color(0xFF0F172A);
+  static const Color primaryNavyLight = Color(0xFF1E293B);
+  static const Color primaryNavyDark = Color(0xFF0A0F1D);
 
+  // Vibrant Brand Accents
   static const Color accentAmber = Color(0xFFF59E0B);
   static const Color accentAmberLight = Color(0xFFFEF3C7);
   static const Color accentAmberDark = Color(0xFFD97706);
 
   static const Color softRose = Color(0xFFF43F5E);
   static const Color softRoseLight = Color(0xFFFFE4E6);
-  static const Color warmPlum = Color(0xFF9333EA);
-  static const Color warmPlumLight = Color(0xFFF3E8FF);
+  static const Color warmPlum = Color(0xFF8B5CF6);
+  static const Color warmPlumLight = Color(0xFFEDE9FE);
 
-  // Background & surface tints
+  // High-End Surface Tints
   static const Color backgroundLight = Color(0xFFF8FAFC);
   static const Color cardSurfaceLight = Colors.white;
-  static const Color backgroundDark = Color(0xFF0B132B);
-  static const Color cardSurfaceDark = Color(0xFF162544);
+  static const Color backgroundDark = Color(0xFF090D16);
+  static const Color cardSurfaceDark = Color(0xFF131B2E);
+  static const Color cardSurfaceDarkElevated = Color(0xFF1B2640);
 
-  // Functional colors
+  // Status & Utility Colors
   static const Color successGreen = Color(0xFF10B981);
   static const Color successLight = Color(0xFFD1FAE5);
   static const Color warningOrange = Color(0xFFF97316);
   static const Color errorRed = Color(0xFFEF4444);
   static const Color neutralGrey = Color(0xFF64748B);
-  static const Color borderSubtle = Color(0x14000000);
+  static const Color borderSubtle = Color(0x18000000);
+}
+
+class HissouAnimations {
+  static const Duration fast = Duration(milliseconds: 200);
+  static const Duration normal = Duration(milliseconds: 350);
+  static const Duration slow = Duration(milliseconds: 600);
+
+  static const Curve spring = Curves.easeOutBack;
+  static const Curve smooth = Curves.easeInOutCubic;
+  static const Curve bouncy = Curves.elasticOut;
+}
+
+class HissouDecorations {
+  static BoxDecoration glassCard({required bool isDark, double radius = 24}) {
+    return BoxDecoration(
+      color: isDark
+          ? HissouColors.cardSurfaceDark.withAlpha(220)
+          : Colors.white.withAlpha(240),
+      borderRadius: BorderRadius.circular(radius),
+      border: Border.all(
+        color: isDark
+            ? Colors.white.withAlpha(25)
+            : Colors.black.withAlpha(12),
+        width: 1,
+      ),
+      boxShadow: [
+        BoxShadow(
+          color: isDark ? Colors.black45 : Colors.black.withAlpha(15),
+          blurRadius: 20,
+          offset: const Offset(0, 8),
+        ),
+      ],
+    );
+  }
+
+  static BoxDecoration glowingGradientButton({
+    required List<Color> colors,
+    double radius = 18,
+  }) {
+    return BoxDecoration(
+      gradient: LinearGradient(
+        colors: colors,
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+      ),
+      borderRadius: BorderRadius.circular(radius),
+      boxShadow: [
+        BoxShadow(
+          color: colors.first.withAlpha(80),
+          blurRadius: 16,
+          offset: const Offset(0, 6),
+        ),
+      ],
+    );
+  }
 }
 
 class HissouTheme {
@@ -45,7 +102,7 @@ class HissouTheme {
       useMaterial3: true,
       colorScheme: colorScheme,
       scaffoldBackgroundColor: HissouColors.backgroundLight,
-      fontFamily: null, // Uses system font with clear hierarchy
+      fontFamily: null,
       appBarTheme: const AppBarTheme(
         backgroundColor: Colors.white,
         elevation: 0,

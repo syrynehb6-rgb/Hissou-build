@@ -104,7 +104,7 @@ class _StoriesScreenState extends State<StoriesScreen> {
                 ),
                 const SizedBox(height: 16),
                 DropdownButtonFormField<Pet>(
-                  value: selectedPet,
+                  initialValue: selectedPet,
                   decoration: InputDecoration(
                     labelText: tr(context, 'species'),
                     prefixIcon: const Icon(Icons.pets_rounded, color: HissouColors.accentAmber),

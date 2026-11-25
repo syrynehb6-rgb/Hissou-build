@@ -2,9 +2,12 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../../core/responsive/responsive_layout.dart';
 import '../../core/theme/app_theme.dart';
+import '../../data/repositories/order_repository.dart';
 import '../../l10n.dart';
 import '../features/health/health_screen.dart';
+import '../features/marketplace/cart_sheet.dart';
 import '../features/marketplace/marketplace_screen.dart';
+import '../features/orders/orders_screen.dart';
 import '../features/stories/stories_screen.dart';
 import '../features/translator/translator_screen.dart';
 
@@ -19,12 +22,30 @@ class AdaptiveScaffold extends StatefulWidget {
 
 class _AdaptiveScaffoldState extends State<AdaptiveScaffold> {
   int _currentIndex = 0;
+  final _orderRepo = OrderRepository();
+
+  @override
+  void initState() {
+    super.initState();
+    _orderRepo.addListener(_onCartChanged);
+  }
+
+  @override
+  void dispose() {
+    _orderRepo.removeListener(_onCartChanged);
+    super.dispose();
+  }
+
+  void _onCartChanged() {
+    if (mounted) setState(() {});
+  }
 
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
         final isWideScreen = constraints.maxWidth >= ResponsiveLayout.compactBreakpoint;
+        final isDark = Theme.of(context).brightness == Brightness.dark;
 
         final screens = [
           StoriesScreen(
@@ -38,9 +59,10 @@ class _AdaptiveScaffoldState extends State<AdaptiveScaffold> {
         ];
 
         final currentLang = Localizations.localeOf(context).languageCode.toUpperCase();
+        final cartCount = _orderRepo.cartCount;
 
         return Scaffold(
-          extendBody: !isWideScreen, // Allows content to flow behind frosted floating nav
+          extendBody: !isWideScreen,
           appBar: AppBar(
             toolbarHeight: 64,
             titleSpacing: 16,
@@ -87,9 +109,7 @@ class _AdaptiveScaffoldState extends State<AdaptiveScaffold> {
                             fontWeight: FontWeight.w900,
                             fontSize: 20,
                             letterSpacing: -0.6,
-                            color: Theme.of(context).brightness == Brightness.dark
-                                ? Colors.white
-                                : HissouColors.primaryNavy,
+                            color: isDark ? Colors.white : HissouColors.primaryNavy,
                           ),
                         ),
                         const SizedBox(width: 6),
@@ -100,7 +120,7 @@ class _AdaptiveScaffoldState extends State<AdaptiveScaffold> {
                             borderRadius: BorderRadius.circular(6),
                           ),
                           child: const Text(
-                            'AI',
+                            'PRO',
                             style: TextStyle(
                               fontSize: 10,
                               fontWeight: FontWeight.w800,
@@ -115,9 +135,7 @@ class _AdaptiveScaffoldState extends State<AdaptiveScaffold> {
                       style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w500,
-                        color: Theme.of(context).brightness == Brightness.dark
-                            ? Colors.white70
-                            : HissouColors.neutralGrey,
+                        color: isDark ? Colors.white70 : HissouColors.neutralGrey,
                       ),
                     ),
                   ],
@@ -125,17 +143,64 @@ class _AdaptiveScaffoldState extends State<AdaptiveScaffold> {
               ],
             ),
             actions: [
+              // Shopping Cart Action Button with Animated Badge
+              Stack(
+                alignment: Alignment.center,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.shopping_bag_outlined, size: 24),
+                    color: isDark ? Colors.white : HissouColors.primaryNavy,
+                    tooltip: 'Panier d\'achats',
+                    onPressed: () {
+                      CartSheet.show(context, onOrderPlaced: () => setState(() {}));
+                    },
+                  ),
+                  if (cartCount > 0)
+                    Positioned(
+                      top: 8,
+                      right: 8,
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: const BoxDecoration(
+                          color: HissouColors.softRose,
+                          shape: BoxShape.circle,
+                        ),
+                        constraints: const BoxConstraints(minWidth: 18, minHeight: 18),
+                        child: Center(
+                          child: Text(
+                            '$cartCount',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+
+              // Orders shortcut
+              IconButton(
+                icon: const Icon(Icons.receipt_long_outlined, size: 22),
+                color: isDark ? Colors.white : HissouColors.primaryNavy,
+                tooltip: 'Mes Commandes',
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const OrdersScreen()),
+                  );
+                },
+              ),
+
+              // Language selector
               Container(
                 margin: const EdgeInsets.symmetric(vertical: 12),
                 decoration: BoxDecoration(
-                  color: Theme.of(context).brightness == Brightness.dark
-                      ? Colors.white.withAlpha(15)
-                      : HissouColors.backgroundLight,
+                  color: isDark ? Colors.white.withAlpha(15) : HissouColors.backgroundLight,
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(
-                    color: Theme.of(context).brightness == Brightness.dark
-                        ? Colors.white12
-                        : HissouColors.borderSubtle,
+                    color: isDark ? Colors.white12 : HissouColors.borderSubtle,
                   ),
                 ),
                 child: PopupMenuButton<String>(
@@ -163,7 +228,7 @@ class _AdaptiveScaffoldState extends State<AdaptiveScaffold> {
                   ],
                 ),
               ),
-              const SizedBox(width: 14),
+              const SizedBox(width: 10),
             ],
           ),
           body: isWideScreen
@@ -209,7 +274,7 @@ class _AdaptiveScaffoldState extends State<AdaptiveScaffold> {
               : Stack(
                   children: [
                     Positioned.fill(
-                      bottom: 84, // Reserve space for the floating nav
+                      bottom: 84,
                       child: screens[_currentIndex],
                     ),
                     Positioned(
@@ -237,23 +302,23 @@ class _AdaptiveScaffoldState extends State<AdaptiveScaffold> {
     return ClipRRect(
       borderRadius: BorderRadius.circular(26),
       child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+        filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
         child: Container(
           height: 68,
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
           decoration: BoxDecoration(
             color: isDark
-                ? HissouColors.cardSurfaceDark.withAlpha(220)
+                ? HissouColors.cardSurfaceDark.withAlpha(225)
                 : Colors.white.withAlpha(235),
             borderRadius: BorderRadius.circular(26),
             border: Border.all(
-              color: isDark ? Colors.white.withAlpha(25) : Colors.white,
+              color: isDark ? Colors.white.withAlpha(30) : Colors.white,
               width: 1.5,
             ),
             boxShadow: [
               BoxShadow(
-                color: HissouColors.primaryNavy.withAlpha(isDark ? 80 : 30),
-                blurRadius: 28,
+                color: HissouColors.primaryNavyDark.withAlpha(isDark ? 90 : 35),
+                blurRadius: 30,
                 spreadRadius: 2,
                 offset: const Offset(0, 10),
               ),
@@ -271,7 +336,7 @@ class _AdaptiveScaffoldState extends State<AdaptiveScaffold> {
                   behavior: HitTestBehavior.opaque,
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 260),
-                    curve: Curves.easeOutCubic,
+                    curve: Curves.easeOutBack,
                     padding: const EdgeInsets.symmetric(vertical: 6),
                     decoration: BoxDecoration(
                       color: isSelected
@@ -286,8 +351,9 @@ class _AdaptiveScaffoldState extends State<AdaptiveScaffold> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         AnimatedScale(
-                          duration: const Duration(milliseconds: 200),
-                          scale: isSelected ? 1.15 : 1.0,
+                          duration: const Duration(milliseconds: 220),
+                          curve: Curves.easeOutBack,
+                          scale: isSelected ? 1.18 : 1.0,
                           child: Icon(
                             isSelected ? (item['activeIcon'] as IconData) : (item['icon'] as IconData),
                             size: 22,
@@ -303,7 +369,7 @@ class _AdaptiveScaffoldState extends State<AdaptiveScaffold> {
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
                             fontSize: 11,
-                            fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
+                            fontWeight: isSelected ? FontWeight.w900 : FontWeight.w500,
                             color: isSelected
                                 ? (isDark ? HissouColors.accentAmber : HissouColors.primaryNavy)
                                 : (isDark ? Colors.white54 : HissouColors.neutralGrey),

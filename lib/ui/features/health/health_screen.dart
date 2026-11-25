@@ -101,7 +101,7 @@ class _HealthScreenState extends State<HealthScreen> {
                 const SizedBox(height: 14),
                 if (_pets.isNotEmpty)
                   DropdownButtonFormField<Pet>(
-                    value: selectedPet,
+                    initialValue: selectedPet,
                     decoration: InputDecoration(
                       labelText: tr(context, 'name'),
                       prefixIcon: const Icon(Icons.pets_rounded, color: HissouColors.accentAmber),
@@ -332,7 +332,7 @@ class _HealthScreenState extends State<HealthScreen> {
                       ),
                       Switch(
                         value: _sosActive,
-                        activeColor: HissouColors.accentAmber,
+                        activeThumbColor: HissouColors.accentAmber,
                         activeTrackColor: Colors.white24,
                         onChanged: (val) async {
                           await _healthRepo.setSosActive(val);
