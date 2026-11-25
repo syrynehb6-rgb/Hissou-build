@@ -3,7 +3,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'core/theme/app_theme.dart';
 import 'l10n.dart';
-import 'ui/navigation/adaptive_scaffold.dart';
+import 'ui/features/auth/splash_screen.dart';
 
 void main() => runApp(const HissouApp());
 
@@ -15,7 +15,7 @@ class HissouApp extends StatefulWidget {
 }
 
 class _HissouAppState extends State<HissouApp> {
-  Locale _locale = const Locale('en');
+  Locale _locale = const Locale('fr');
 
   @override
   Widget build(BuildContext context) {
@@ -32,7 +32,7 @@ class _HissouAppState extends State<HissouApp> {
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
-      home: AdaptiveScaffold(
+      home: SplashScreen(
         onLocaleChanged: (locale) => setState(() => _locale = locale),
       ),
     );

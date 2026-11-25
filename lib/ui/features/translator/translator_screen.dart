@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'dart:math';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
@@ -106,8 +107,12 @@ class _TranslatorScreenState extends State<TranslatorScreen>
       if (mounted) _snack(tr(context, 'mic'));
       return;
     }
-    final dir = await getTemporaryDirectory();
-    final path = '${dir.path}/clip_${DateTime.now().millisecondsSinceEpoch}.wav';
+    final appDir = await getApplicationDocumentsDirectory();
+    final audioDir = Directory('${appDir.path}/hissou_records');
+    if (!await audioDir.exists()) {
+      await audioDir.create(recursive: true);
+    }
+    final path = '${audioDir.path}/meow_${DateTime.now().millisecondsSinceEpoch}.wav';
     await _recorder.start(
       const RecordConfig(encoder: AudioEncoder.wav, sampleRate: 16000, numChannels: 1),
       path: path,
@@ -1018,6 +1023,32 @@ class _TranslatorScreenState extends State<TranslatorScreen>
                     ),
                   ),
                 ],
+
+                const SizedBox(height: 14),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: HissouColors.successGreen.withAlpha(20),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: HissouColors.successGreen.withAlpha(40)),
+                  ),
+                  child: Row(
+                    children: const [
+                      Icon(Icons.graphic_eq_rounded, size: 16, color: HissouColors.successGreen),
+                      SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Enregistrement vocal félin sauvegardé dans l\'historique',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: HissouColors.successGreen,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
 
                 const SizedBox(height: 16),
 
