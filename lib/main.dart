@@ -19,22 +19,27 @@ class _HissouAppState extends State<HissouApp> {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Hissou',
-      debugShowCheckedModeBanner: false,
-      theme: HissouTheme.lightTheme,
-      darkTheme: HissouTheme.darkTheme,
-      themeMode: ThemeMode.light,
-      locale: _locale,
-      supportedLocales: [for (final l in supportedLangs) Locale(l)],
-      localizationsDelegates: const [
-        GlobalMaterialLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
-      ],
-      home: SplashScreen(
-        onLocaleChanged: (locale) => setState(() => _locale = locale),
-      ),
+    return ValueListenableBuilder<ThemeMode>(
+      valueListenable: HissouThemeController.themeMode,
+      builder: (context, currentMode, _) {
+        return MaterialApp(
+          title: 'Hissou',
+          debugShowCheckedModeBanner: false,
+          theme: HissouTheme.lightTheme,
+          darkTheme: HissouTheme.darkTheme,
+          themeMode: currentMode,
+          locale: _locale,
+          supportedLocales: [for (final l in supportedLangs) Locale(l)],
+          localizationsDelegates: const [
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          home: SplashScreen(
+            onLocaleChanged: (locale) => setState(() => _locale = locale),
+          ),
+        );
+      },
     );
   }
 }

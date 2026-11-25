@@ -300,51 +300,54 @@ class _StoriesScreenState extends State<StoriesScreen> {
                     ),
                   ),
 
-                  // Existing Pets Stories
+                  // Existing Pets Stories (Interactive Fullscreen Viewer)
                   for (final p in _pets)
                     Padding(
                       padding: const EdgeInsets.only(right: 14),
-                      child: Column(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(3),
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              gradient: const LinearGradient(
-                                colors: [HissouColors.accentAmber, HissouColors.softRose, HissouColors.warmPlum],
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                              ),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: HissouColors.accentAmber.withAlpha(60),
-                                  blurRadius: 10,
-                                  offset: const Offset(0, 4),
-                                ),
-                              ],
-                            ),
-                            child: Container(
-                              width: 60,
-                              height: 60,
+                      child: BouncyTap(
+                        onTap: () => _openStoryViewer(p),
+                        child: Column(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(3),
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
-                                color: isDark ? HissouColors.cardSurfaceDark : Colors.white,
+                                gradient: const LinearGradient(
+                                  colors: [HissouColors.accentAmber, HissouColors.softRose, HissouColors.warmPlum],
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: HissouColors.accentAmber.withAlpha(60),
+                                    blurRadius: 10,
+                                    offset: const Offset(0, 4),
+                                  ),
+                                ],
                               ),
-                              child: Center(
-                                child: Icon(
-                                  _getSpeciesIcon(p.species),
-                                  color: HissouColors.primaryNavy,
-                                  size: 26,
+                              child: Container(
+                                width: 60,
+                                height: 60,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: isDark ? HissouColors.cardSurfaceDark : Colors.white,
+                                ),
+                                child: Center(
+                                  child: Icon(
+                                    _getSpeciesIcon(p.species),
+                                    color: isDark ? Colors.white : HissouColors.primaryNavy,
+                                    size: 26,
+                                  ),
                                 ),
                               ),
                             ),
-                          ),
-                          const SizedBox(height: 6),
-                          Text(
-                            p.name,
-                            style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
-                          ),
-                        ],
+                            const SizedBox(height: 6),
+                            Text(
+                              p.name,
+                              style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                 ],
@@ -529,32 +532,381 @@ class _StoriesScreenState extends State<StoriesScreen> {
     );
   }
 
-  Widget _buildStoryCard(StoryPost story, bool isDark) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      decoration: BoxDecoration(
-        color: isDark ? HissouColors.cardSurfaceDark : Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: isDark ? Colors.white12 : HissouColors.borderSubtle,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: HissouColors.primaryNavy.withAlpha(isDark ? 40 : 10),
-            blurRadius: 18,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(18),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header: Pet Avatar, Name, Species, Time
-            Row(
+  String? _heartBurstStoryId;
+
+  Future<void> _triggerHeartBurst(StoryPost story) async {
+    setState(() => _heartBurstStoryId = story.id);
+    if (!story.isLiked) {
+      await _storyRepo.toggleLike(story.id);
+      final updated = await _storyRepo.getStories();
+      if (mounted) setState(() => _stories = updated);
+    }
+    await Future.delayed(const Duration(milliseconds: 700));
+    if (mounted) {
+      setState(() => _heartBurstStoryId = null);
+    }
+  }
+
+  void _openStoryViewer(Pet pet) {
+    showGeneralDialog(
+      context: context,
+      barrierDismissible: true,
+      barrierLabel: 'Story Viewer',
+      barrierColor: Colors.black87,
+      transitionDuration: const Duration(milliseconds: 320),
+      pageBuilder: (ctx, anim1, anim2) {
+        return Scaffold(
+          backgroundColor: HissouColors.primaryNavyDark,
+          body: SafeArea(
+            child: Stack(
               children: [
+                // Background Ambient Gradient
                 Container(
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        HissouColors.primaryNavyDark,
+                        Color(0xFF1E1B4B),
+                        Color(0xFF31102F),
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                  ),
+                ),
+                // Top Progress Bar & Pet Header
+                Column(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                      child: TweenAnimationBuilder<double>(
+                        tween: Tween<double>(begin: 0.0, end: 1.0),
+                        duration: const Duration(seconds: 5),
+                        onEnd: () {
+                          if (ctx.mounted && Navigator.of(ctx).canPop()) {
+                            Navigator.of(ctx).pop();
+                          }
+                        },
+                        builder: (context, value, _) {
+                          return ClipRRect(
+                            borderRadius: BorderRadius.circular(4),
+                            child: LinearProgressIndicator(
+                              value: value,
+                              minHeight: 4,
+                              backgroundColor: Colors.white24,
+                              valueColor: const AlwaysStoppedAnimation<Color>(HissouColors.accentAmber),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 42,
+                            height: 42,
+                            decoration: const BoxDecoration(
+                              shape: BoxShape.circle,
+                              gradient: LinearGradient(
+                                colors: [HissouColors.accentAmber, HissouColors.softRose],
+                              ),
+                            ),
+                            child: Icon(_getSpeciesIcon(pet.species), color: Colors.white, size: 22),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  pet.name,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w900,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                                Text(
+                                  '${pet.breed.isNotEmpty ? pet.breed : pet.species.toUpperCase()} • En direct',
+                                  style: const TextStyle(color: Colors.white70, fontSize: 11),
+                                ),
+                              ],
+                            ),
+                          ),
+                          IconButton(
+                            onPressed: () => Navigator.of(ctx).pop(),
+                            icon: const Icon(Icons.close_rounded, color: Colors.white, size: 26),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const Spacer(),
+                    // Center Story Content
+                    Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 24),
+                      padding: const EdgeInsets.all(28),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withAlpha(18),
+                        borderRadius: BorderRadius.circular(32),
+                        border: Border.all(color: Colors.white24),
+                      ),
+                      child: Column(
+                        children: [
+                          Container(
+                            width: 96,
+                            height: 96,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              gradient: const LinearGradient(
+                                colors: [HissouColors.accentAmber, HissouColors.softRose],
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: HissouColors.accentAmber.withAlpha(90),
+                                  blurRadius: 30,
+                                  spreadRadius: 4,
+                                ),
+                              ],
+                            ),
+                            child: Icon(_getSpeciesIcon(pet.species), color: Colors.white, size: 48),
+                          ),
+                          const SizedBox(height: 20),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                            decoration: BoxDecoration(
+                              color: HissouColors.accentAmber,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: const Text(
+                              'HUMEUR DÉTECTÉE : JOYEUX & JOUEUR ✨',
+                              style: TextStyle(
+                                color: HissouColors.primaryNavyDark,
+                                fontSize: 10,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 14),
+                          Text(
+                            '“Bonjour ! C\'est ${pet.name}, j\'ai fait ma sieste au soleil et j\'attends mes croquettes avec impatience !”',
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 18,
+                              fontWeight: FontWeight.w800,
+                              height: 1.4,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const Spacer(),
+                    // Bottom Emoji Quick Reactions
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: ['❤️', '😍', '🐾', '🔥', '👑'].map((emoji) {
+                          return BouncyTap(
+                            onTap: () {
+                              Navigator.of(ctx).pop();
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Réaction $emoji envoyée à ${pet.name} !'),
+                                  backgroundColor: HissouColors.primaryNavy,
+                                  behavior: SnackBarBehavior.floating,
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                ),
+                              );
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withAlpha(20),
+                                shape: BoxShape.circle,
+                                border: Border.all(color: Colors.white24),
+                              ),
+                              child: Text(emoji, style: const TextStyle(fontSize: 22)),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+      transitionBuilder: (_, anim, __, child) {
+        return ScaleTransition(
+          scale: CurvedAnimation(parent: anim, curve: Curves.easeOutBack),
+          child: FadeTransition(opacity: anim, child: child),
+        );
+      },
+    );
+  }
+
+  void _showCommentsSheet(StoryPost story, bool isDark) {
+    final commentCtl = TextEditingController();
+    final comments = <Map<String, String>>[
+      {'author': 'Dr. Amine (Vétérinaire)', 'text': 'Trop mignon ! Son miaulement montre qu\'il est en pleine forme 🐾', 'time': 'Il y a 15m'},
+      {'author': 'Yasmine & Luna', 'text': 'Adorables ! Ma chatte fait exactement le même bruit devant sa gamelle 😍', 'time': 'Il y a 8m'},
+    ];
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSheetState) {
+          return Container(
+            padding: EdgeInsets.only(
+              left: 20,
+              right: 20,
+              top: 16,
+              bottom: MediaQuery.of(ctx).viewInsets.bottom + 20,
+            ),
+            decoration: BoxDecoration(
+              color: isDark ? HissouColors.cardSurfaceDark : Colors.white,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 42,
+                    height: 4,
+                    margin: const EdgeInsets.only(bottom: 14),
+                    decoration: BoxDecoration(
+                      color: isDark ? Colors.white24 : Colors.black12,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                Text(
+                  'Commentaires sur ${story.petName}',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w900,
+                    color: isDark ? Colors.white : HissouColors.primaryNavy,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                ...comments.map((c) => Container(
+                      margin: const EdgeInsets.only(bottom: 10),
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: isDark ? Colors.white.withAlpha(8) : HissouColors.backgroundLight,
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                c['author']!,
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w800,
+                                  fontSize: 12,
+                                  color: isDark ? HissouColors.accentAmber : HissouColors.primaryNavy,
+                                ),
+                              ),
+                              Text(
+                                c['time']!,
+                                style: const TextStyle(fontSize: 10, color: HissouColors.neutralGrey),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            c['text']!,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: isDark ? Colors.white70 : Colors.black87,
+                            ),
+                          ),
+                        ],
+                      ),
+                    )),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: commentCtl,
+                        decoration: const InputDecoration(
+                          hintText: 'Écrire un commentaire bienveillant...',
+                          isDense: true,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    IconButton.filled(
+                      style: IconButton.styleFrom(backgroundColor: HissouColors.accentAmber),
+                      onPressed: () {
+                        final text = commentCtl.text.trim();
+                        if (text.isEmpty) return;
+                        setSheetState(() {
+                          comments.add({
+                            'author': 'Vous ✨',
+                            'text': text,
+                            'time': 'À l\'instant',
+                          });
+                          commentCtl.clear();
+                        });
+                      },
+                      icon: const Icon(Icons.send_rounded, size: 18, color: HissouColors.primaryNavyDark),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildStoryCard(StoryPost story, bool isDark) {
+    final isBursting = _heartBurstStoryId == story.id;
+    return GestureDetector(
+      onDoubleTap: () => _triggerHeartBurst(story),
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          Container(
+            margin: const EdgeInsets.only(bottom: 16),
+            decoration: BoxDecoration(
+              color: isDark ? HissouColors.cardSurfaceDark : Colors.white,
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(
+                color: isDark ? Colors.white12 : HissouColors.borderSubtle,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: HissouColors.primaryNavy.withAlpha(isDark ? 40 : 10),
+                  blurRadius: 18,
+                  offset: const Offset(0, 6),
+                ),
+              ],
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(18),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Header: Pet Avatar, Name, Species, Time
+                  Row(
+                    children: [
+                      Container(
                   width: 44,
                   height: 44,
                   decoration: BoxDecoration(
@@ -770,7 +1122,7 @@ class _StoriesScreenState extends State<StoriesScreen> {
                 ),
                 const SizedBox(width: 12),
                 InkWell(
-                  onTap: () {},
+                  onTap: () => _showCommentsSheet(story, isDark),
                   borderRadius: BorderRadius.circular(12),
                   child: const Padding(
                     padding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
@@ -779,7 +1131,7 @@ class _StoriesScreenState extends State<StoriesScreen> {
                         Icon(Icons.chat_bubble_outline_rounded, size: 18, color: HissouColors.neutralGrey),
                         SizedBox(width: 5),
                         Text(
-                          'Reply',
+                          'Commenter (2)',
                           style: TextStyle(fontSize: 12, color: HissouColors.neutralGrey, fontWeight: FontWeight.w600),
                         ),
                       ],
@@ -792,7 +1144,7 @@ class _StoriesScreenState extends State<StoriesScreen> {
                   onPressed: () {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                        content: Text('Sharing ${story.petName}\'s story...'),
+                        content: Text('Partage de la story de ${story.petName}...'),
                         behavior: SnackBarBehavior.floating,
                       ),
                     );
@@ -802,6 +1154,40 @@ class _StoriesScreenState extends State<StoriesScreen> {
             ),
           ],
         ),
+      ),
+    ),
+          // Floating Heart Burst Overlay on Double-Tap
+          IgnorePointer(
+            child: AnimatedScale(
+              scale: isBursting ? 1.3 : 0.0,
+              duration: const Duration(milliseconds: 350),
+              curve: Curves.elasticOut,
+              child: AnimatedOpacity(
+                opacity: isBursting ? 1.0 : 0.0,
+                duration: const Duration(milliseconds: 250),
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withAlpha(220),
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: HissouColors.softRose.withAlpha(100),
+                        blurRadius: 24,
+                        spreadRadius: 4,
+                      ),
+                    ],
+                  ),
+                  child: const Icon(
+                    Icons.favorite_rounded,
+                    color: HissouColors.softRose,
+                    size: 54,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

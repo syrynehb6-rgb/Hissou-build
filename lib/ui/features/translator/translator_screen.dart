@@ -173,8 +173,278 @@ class _TranslatorScreenState extends State<TranslatorScreen>
 
   Future<void> _speak(Interpretation i) async {
     const tags = {'en': 'en-US', 'fr': 'fr-FR', 'ar': 'ar-SA'};
-    await _tts.setLanguage(tags[i.language] ?? 'en-US');
+    await _tts.setLanguage(tags[i.language] ?? 'fr-FR');
+    await _tts.setPitch(1.0);
     await _tts.speak(i.message);
+  }
+
+  String _activeSoundPad = '';
+
+  Future<void> _playPetSoundPad(Map<String, String> pad) async {
+    setState(() => _activeSoundPad = pad['id']!);
+    final appDir = await getApplicationDocumentsDirectory();
+    final audioDir = Directory('${appDir.path}/hissou_records');
+    if (!await audioDir.exists()) {
+      await audioDir.create(recursive: true);
+    }
+    final savedPath = '${audioDir.path}/soundpad_${pad['id']}_${DateTime.now().millisecondsSinceEpoch}.wav';
+
+    await _tts.setLanguage('fr-FR');
+    await _tts.setPitch(1.35);
+    await _tts.speak(pad['sound']!);
+
+    final entry = Interpretation(
+      mood: pad['title']!,
+      message: pad['meaning']!,
+      advice: 'Signal vocal émis vers votre animal et archivé dans vos enregistrements.',
+      confidence: 0.98,
+      species: _species,
+      petName: _nameCtl.text.trim().isNotEmpty ? _nameCtl.text.trim() : 'Hissou Soundboard',
+      language: 'fr',
+      audioPath: savedPath,
+      at: DateTime.now(),
+    );
+    await _store.add(entry);
+    final h = await _store.load();
+    if (mounted) {
+      setState(() {
+        _history = h;
+      });
+    }
+    await Future.delayed(const Duration(milliseconds: 1100));
+    if (mounted) {
+      setState(() => _activeSoundPad = '');
+    }
+  }
+
+  Future<void> _simulateInstantTranslation() async {
+    final lang = Localizations.localeOf(context).languageCode;
+    setState(() {
+      _busy = true;
+      _result = null;
+    });
+    _waveController.repeat();
+    await Future.delayed(const Duration(milliseconds: 1100));
+    _waveController.stop();
+    _waveController.reset();
+
+    final appDir = await getApplicationDocumentsDirectory();
+    final audioDir = Directory('${appDir.path}/hissou_records');
+    if (!await audioDir.exists()) {
+      await audioDir.create(recursive: true);
+    }
+    final path = '${audioDir.path}/demo_meow_${DateTime.now().millisecondsSinceEpoch}.wav';
+
+    final samples = [
+      {
+        'mood': 'Affamé & Impatient',
+        'message': 'Ma gamelle est presque vide ! Remplis-la avec mes croquettes préférées s\'il te plaît !',
+        'advice': 'Vérifiez que son eau est bien fraîche et servez-lui une portion adaptée.',
+      },
+      {
+        'mood': 'Très Câlin & Heureux',
+        'message': 'Je me sens tellement en sécurité près de toi ! Gratte-moi doucement sous le menton.',
+        'advice': 'Ce ronronnement basse fréquence indique un bien-être émotionnel optimal.',
+      },
+      {
+        'mood': 'Joueur & Curieux',
+        'message': 'J\'ai vu quelque chose bouger ! Viens jouer avec moi et lance ma petite souris !',
+        'advice': '15 minutes de jeu interactif stimulent ses instincts naturels.',
+      },
+    ];
+    final chosen = samples[Random().nextInt(samples.length)];
+
+    final res = Interpretation(
+      mood: chosen['mood']!,
+      message: chosen['message']!,
+      advice: chosen['advice']!,
+      confidence: 0.96,
+      species: _species,
+      petName: _nameCtl.text.trim().isNotEmpty ? _nameCtl.text.trim() : 'Milo',
+      language: lang,
+      audioPath: path,
+      at: DateTime.now(),
+    );
+
+    await _store.add(res);
+    final h = await _store.load();
+    if (!mounted) return;
+    setState(() {
+      _busy = false;
+      _result = res;
+      _history = h;
+    });
+    await _speak(res);
+  }
+
+  Widget _buildPetSoundboardSection(bool isDark) {
+    final pads = [
+      {
+        'id': 'call',
+        'emoji': '🐾',
+        'title': 'Appel Doux',
+        'subtitle': 'Viens ici !',
+        'sound': 'Mrrr miaou, viens ici mon petit chat !',
+        'meaning': '[Appel Vocal] "Viens près de moi, tout va bien !"',
+      },
+      {
+        'id': 'purr',
+        'emoji': '❤️',
+        'title': 'Ronron Calme',
+        'subtitle': 'Je t\'aime',
+        'sound': 'Prrrrr, prrrrr, je t\'aime très fort.',
+        'meaning': '[Ronronnement Apaisant] "Je t\'aime et tu es en sécurité."',
+      },
+      {
+        'id': 'food',
+        'emoji': '🍗',
+        'title': 'À Table !',
+        'subtitle': 'Croquettes',
+        'sound': 'Miaou miam miam, c\'est l\'heure de manger !',
+        'meaning': '[Signal Repas] "C\'est l\'heure des croquettes, viens manger !"',
+      },
+      {
+        'id': 'play',
+        'emoji': '🎾',
+        'title': 'On Joue ?',
+        'subtitle': 'Mode excité',
+        'sound': 'Miaou ! Attrape la petite souris !',
+        'meaning': '[Invitation au Jeu] "Viens courir et jouer avec moi !"',
+      },
+      {
+        'id': 'calm',
+        'emoji': '😴',
+        'title': 'Dodo & Zen',
+        'subtitle': 'Apaisement',
+        'sound': 'Chut, doucement, fais de beaux rêves.',
+        'meaning': '[Fréquence Zen] "Détends-toi, c\'est l\'heure de dormir."',
+      },
+      {
+        'id': 'stop',
+        'emoji': '🛑',
+        'title': 'Doucement',
+        'subtitle': 'Stop bêtise',
+        'sound': 'Non non, doucement les griffes !',
+        'meaning': '[Avertissement Doux] "Arrête de griffer, sois sage."',
+      },
+    ];
+
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: isDark ? HissouColors.cardSurfaceDark : Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: isDark ? Colors.white12 : HissouColors.borderSubtle,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: HissouColors.primaryNavy.withAlpha(isDark ? 40 : 10),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: HissouColors.softRose.withAlpha(25),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(Icons.campaign_rounded, color: HissouColors.softRose, size: 22),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Soundboard : Parler à mon Animal',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w900,
+                        color: isDark ? Colors.white : HissouColors.primaryNavy,
+                      ),
+                    ),
+                    const Text(
+                      'Émettez des fréquences vocales félines & archivez-les',
+                      style: TextStyle(fontSize: 11, color: HissouColors.neutralGrey),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: pads.length,
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 3,
+              mainAxisSpacing: 10,
+              crossAxisSpacing: 10,
+              childAspectRatio: 1.05,
+            ),
+            itemBuilder: (context, idx) {
+              final pad = pads[idx];
+              final isPlaying = _activeSoundPad == pad['id'];
+              return BouncyTap(
+                onTap: () => _playPetSoundPad(pad),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 220),
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: isPlaying
+                        ? HissouColors.accentAmber.withAlpha(45)
+                        : (isDark ? Colors.white.withAlpha(8) : HissouColors.backgroundLight),
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(
+                      color: isPlaying
+                          ? HissouColors.accentAmber
+                          : (isDark ? Colors.white12 : HissouColors.borderSubtle),
+                      width: isPlaying ? 2 : 1,
+                    ),
+                  ),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(pad['emoji']!, style: const TextStyle(fontSize: 22)),
+                      const SizedBox(height: 6),
+                      Text(
+                        pad['title']!,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w800,
+                          color: isDark ? Colors.white : HissouColors.primaryNavy,
+                        ),
+                      ),
+                      Text(
+                        pad['subtitle']!,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 10,
+                          color: HissouColors.neutralGrey,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _shareToStory(Interpretation res) async {
@@ -626,19 +896,40 @@ class _TranslatorScreenState extends State<TranslatorScreen>
 
                 const SizedBox(height: 14),
 
-                // Upload Audio Action
-                OutlinedButton.icon(
-                  onPressed: _pickFile,
-                  icon: const Icon(Icons.cloud_upload_outlined, size: 18),
-                  label: Text(tr(context, 'upload')),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: isDark ? Colors.white70 : HissouColors.primaryNavy,
-                    side: BorderSide(
-                      color: isDark ? Colors.white24 : HissouColors.borderSubtle,
+                // Upload Audio & Instant AI Simulation Actions
+                Wrap(
+                  spacing: 10,
+                  runSpacing: 8,
+                  alignment: WrapAlignment.center,
+                  children: [
+                    OutlinedButton.icon(
+                      onPressed: _pickFile,
+                      icon: const Icon(Icons.cloud_upload_outlined, size: 17),
+                      label: Text(tr(context, 'upload'), style: const TextStyle(fontSize: 12)),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: isDark ? Colors.white70 : HissouColors.primaryNavy,
+                        side: BorderSide(
+                          color: isDark ? Colors.white24 : HissouColors.borderSubtle,
+                        ),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                      ),
                     ),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                  ),
+                    FilledButton.tonalIcon(
+                      onPressed: _busy || _recording ? null : _simulateInstantTranslation,
+                      icon: const Icon(Icons.auto_awesome_rounded, size: 16, color: HissouColors.accentAmberDark),
+                      label: const Text(
+                        'Démo Miaulement IA',
+                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800),
+                      ),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: HissouColors.accentAmber.withAlpha(30),
+                        foregroundColor: isDark ? HissouColors.accentAmber : HissouColors.accentAmberDark,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -674,7 +965,7 @@ class _TranslatorScreenState extends State<TranslatorScreen>
                         ),
                         const SizedBox(height: 2),
                         const Text(
-                          'Deconstructing sound frequencies & pet mood patterns...',
+                          'Analyse spectrale YAMNet & décodage émotionnel en cours...',
                           style: TextStyle(fontSize: 11, color: HissouColors.neutralGrey),
                         ),
                       ],
@@ -689,6 +980,11 @@ class _TranslatorScreenState extends State<TranslatorScreen>
             const SizedBox(height: 24),
             _buildResultCard(_result!, isDark),
           ],
+
+          const SizedBox(height: 26),
+
+          // Bidirectional Pet Soundboard (Human -> Pet)
+          _buildPetSoundboardSection(isDark),
 
           const SizedBox(height: 20),
 

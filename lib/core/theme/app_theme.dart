@@ -1,4 +1,78 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+
+class HissouThemeController {
+  static final ValueNotifier<ThemeMode> themeMode =
+      ValueNotifier<ThemeMode>(ThemeMode.light);
+
+  static void toggleTheme() {
+    HapticFeedback.lightImpact();
+    themeMode.value =
+        themeMode.value == ThemeMode.dark ? ThemeMode.light : ThemeMode.dark;
+  }
+}
+
+/// Reusable physics-based spring tap wrapper for modern micro-animations
+class BouncyTap extends StatefulWidget {
+  final Widget child;
+  final VoidCallback? onTap;
+  final double scaleDown;
+
+  const BouncyTap({
+    super.key,
+    required this.child,
+    this.onTap,
+    this.scaleDown = 0.95,
+  });
+
+  @override
+  State<BouncyTap> createState() => _BouncyTapState();
+}
+
+class _BouncyTapState extends State<BouncyTap>
+    with SingleTickerProviderStateMixin {
+  double _scale = 1.0;
+
+  void _onTapDown(TapDownDetails _) {
+    if (widget.onTap != null) {
+      setState(() => _scale = widget.scaleDown);
+    }
+  }
+
+  void _onTapUp(TapUpDetails _) {
+    if (widget.onTap != null) {
+      setState(() => _scale = 1.0);
+    }
+  }
+
+  void _onTapCancel() {
+    if (widget.onTap != null) {
+      setState(() => _scale = 1.0);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTapDown: _onTapDown,
+      onTapUp: _onTapUp,
+      onTapCancel: _onTapCancel,
+      onTap: () {
+        if (widget.onTap != null) {
+          HapticFeedback.selectionClick();
+          widget.onTap!();
+        }
+      },
+      child: AnimatedScale(
+        scale: _scale,
+        duration: const Duration(milliseconds: 180),
+        curve: Curves.easeOutBack,
+        child: widget.child,
+      ),
+    );
+  }
+}
 
 class HissouColors {
   // Brand identity extracted directly from Hissou's official logo
